@@ -9,30 +9,25 @@ namespace HeroesApi.Controllers;
 [Route("api/[controller]")]
 public class HeroesController : ControllerBase {
     [HttpGet]
-    public ActionResult<List<Hero>> GetAll()
-    {
+    public ActionResult<List<Hero>> GetAll() {
         return Ok(HeroesStore.Heroes);
     }
 
     [HttpGet("{id}")]
-    public ActionResult<Hero> GetById(int id)
-    {
+    public ActionResult<Hero> GetById(int id) {
         var hero = HeroesStore.Heroes.FirstOrDefault(h => h.Id == id);
-        if (hero is null)
-        {
+        if (hero is null) {
             return NotFound(new { message = $"Герой с id={id} не найден" });
         }
         return Ok(hero);
     }
     [HttpGet("demo")]
-    public ActionResult GetDemo( ) {
+    public ActionResult GetDemo() {
         var hero = HeroesStore.Heroes.First();
-        var defaultOptions = new JsonSerializerOptions
-        {
+        var defaultOptions = new JsonSerializerOptions {
             WriteIndented = true
         };
-        var ourOptions = new JsonSerializerOptions
-        {
+        var ourOptions = new JsonSerializerOptions {
             PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
             WriteIndented = true,
             Converters = { new JsonStringEnumConverter() }
@@ -43,6 +38,31 @@ public class HeroesController : ControllerBase {
             withOurSettings = JsonSerializer.Deserialize<object>(
             JsonSerializer.Serialize(hero, ourOptions), ourOptions),
             note = "Сравните имена полей и значение universe в двух вариантах"
-});
+        });
+    }
+    [HttpGet("serialize")]
+    public ActionResult GetSerialize() {
+        var options = new JsonSerializerOptions {
+            PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
+            WriteIndented = true,
+            Converters = { new JsonStringEnumConverter() }
+        };
+        var hero = new Hero {
+            Id = 99,
+            Name = "Тестовый герой",
+            RealName = "Студент",
+            Universe = Universe.Marvel,
+            PowerLevel = 50,
+            Powers = new() { "программирование", "дебаггинг" },
+            Weapon = new() { Name = "Клавиатура", IsRanged = false },
+            InternalNotes = "Это поле не попадёт в JSON"
+        };
+        string serialized = JsonSerializer.Serialize(hero, options);
+        var deserialized = JsonSerializer.Deserialize<Hero>(serialized, options);
+        return Ok(new {
+            serializedJson = serialized,
+            deserializedObject = deserialized,
+            internalNotesAfterDeserialize = deserialized?.InternalNotes ?? "nul - поле было проигнорировано"
+        });
     }
 }
