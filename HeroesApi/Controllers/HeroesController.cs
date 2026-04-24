@@ -9,8 +9,13 @@ namespace HeroesApi.Controllers;
 [Route("api/[controller]")]
 public class HeroesController : ControllerBase {
     [HttpGet]
-    public ActionResult<List<Hero>> GetAll() {
-        return Ok(HeroesStore.Heroes);
+    public ActionResult<List<Hero>> GetAll([FromQuery] string? universe = null) {
+         IEnumerable<Hero> query = HeroesStore.Heroes;
+        if (!string.IsNullOrEmpty(universe))
+        {
+            query = query.Where(h => h.Universe.ToString() == universe);
+        }
+        return Ok(query.ToList());
     }
 
     [HttpGet("{id}")]
@@ -41,13 +46,16 @@ public class HeroesController : ControllerBase {
         });
     }
     [HttpGet("serialize")]
-    public ActionResult GetSerialize() {
-        var options = new JsonSerializerOptions {
+    public ActionResult GetSerialize()
+    {
+        var options = new JsonSerializerOptions
+        {
             PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
             WriteIndented = true,
             Converters = { new JsonStringEnumConverter() }
         };
-        var hero = new Hero {
+        var hero = new Hero
+        {
             Id = 99,
             Name = "Тестовый герой",
             RealName = "Студент",
@@ -59,10 +67,21 @@ public class HeroesController : ControllerBase {
         };
         string serialized = JsonSerializer.Serialize(hero, options);
         var deserialized = JsonSerializer.Deserialize<Hero>(serialized, options);
-        return Ok(new {
+        return Ok(new
+        {
             serializedJson = serialized,
             deserializedObject = deserialized,
             internalNotesAfterDeserialize = deserialized?.InternalNotes ?? "nul - поле было проигнорировано"
         });
+    }
+     [HttpGet("search")]
+    public ActionResult<List<Hero>> Search([FromQuery] string? name = null)
+    {
+        IEnumerable<Hero> query = HeroesStore.Heroes;
+        if (!string.IsNullOrEmpty(name))
+        {
+            query = query.Where(h => h.Name.Contains(name, StringComparison.OrdinalIgnoreCase));
+        }
+        return Ok(query.ToList());
     }
 }
